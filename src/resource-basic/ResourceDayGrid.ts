@@ -52,11 +52,52 @@ export default class ResourceDayGrid extends DayGrid {
 
   componentFootprintToSegs(componentFootprint) {
     const { resourceCnt } = this
-    const genericSegs = // no assigned resources
-      this.datesAboveResources ?
-        this.sliceRangeByDay(componentFootprint.unzonedRange) : // each day-per-resource will need its own column
-        this.sliceRangeByRow(componentFootprint.unzonedRange)
+    let genericSegs;
+    // no assigned resources
+    if (!componentFootprint.isAllDay) {
 
+      genericSegs = this.datesAboveResources ?
+          this.sliceRangeByDay(componentFootprint.unzonedRange) : // each day-per-resource will need its own column
+          this.sliceRangeByRow(componentFootprint.unzonedRange)
+    }
+    else {
+      if (componentFootprint.isAllDay === 'fullday') {
+        genericSegs = [];
+        genericSegs.push({
+          firstRowDayIndex: 0,
+          isEnd: true,
+          isStart: true,
+          lastRowDayIndex: 0,
+          row: 1
+        });
+        genericSegs.push({
+          firstRowDayIndex: 0,
+          isEnd: true,
+          isStart: true,
+          lastRowDayIndex: 0,
+          row: 0
+        });
+      }
+      else {
+        if(componentFootprint.allday_params){
+          genericSegs = this.datesAboveResources ?
+              this.sliceRangeByDay(componentFootprint.unzonedRange) : // each day-per-resource will need its own column
+              this.sliceRangeByRow(componentFootprint.unzonedRange);
+          genericSegs[0]['row'] = componentFootprint.allday_params.hit.row
+        }else{
+
+          genericSegs = this.datesAboveResources ?
+              this.sliceRangeByDay(componentFootprint.unzonedRange) : // each day-per-resource will need its own column
+              this.sliceRangeByRow(componentFootprint.unzonedRange);
+        }
+
+      }
+    }
+    if(componentFootprint.isAllDay === 'pm'){
+      genericSegs[0].row = 1;
+    }else if(componentFootprint.isAllDay === 'am'){
+      genericSegs[0].row = 0;
+    }
     const resourceSegs = []
 
     for (let seg of genericSegs) {

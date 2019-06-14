@@ -1,6 +1,7 @@
 import * as $ from 'jquery'
 import { Mixin, DayTableMixin, EventFootprint, parseFieldSpecs, compareByFieldSpecs, htmlEscape } from 'fullcalendar'
 import ResourceComponentFootprint from '../models/ResourceComponentFootprint'
+import moment from 'moment'
 
 export interface ResourceDayTableInterface {
   resourceCnt: any
@@ -369,13 +370,19 @@ export default class ResourceDayTableMixin extends Mixin implements ResourceDayT
     const isAllDay = this.hasAllDayBusinessHours
     const unzonedRange = this.dateProfile.activeUnzonedRange
     const eventFootprints = []
-
+    if(!isAllDay){
     for (let resource of this.flattenedResources) {
 
       const eventInstanceGroup = (resource.businessHourGenerator || businessHourGenerator)
         .buildEventInstanceGroup(isAllDay, unzonedRange)
-
-      if (eventInstanceGroup) {
+      let day_of_week = moment(this.dateProfile.activeUnzonedRange.startMs).day();
+      let busineesHours = [];
+      if(resource.businessHoursDetails){
+        busineesHours = resource.businessHoursDetails.filter(function (time_data){
+          return time_data.dow[0]==day_of_week
+        });
+      }
+      if (eventInstanceGroup && busineesHours.length > 0) {
         for (let eventRange of eventInstanceGroup.sliceRenderRanges(unzonedRange)) {
           eventFootprints.push(
             new EventFootprint(
@@ -390,6 +397,31 @@ export default class ResourceDayTableMixin extends Mixin implements ResourceDayT
           )
         }
       }
+      // by pass the business hours rendering, add the ovetime times heres
+      if(eventFootprints.length > 0 && resource.businessHoursDetails) {
+        let overtimes = resource.businessHoursDetails.filter(function (time_data){
+          return time_data.dow[0]==day_of_week && time_data.className =='Overtime'
+        });
+        for(let over_time = 0; over_time < overtimes.length; over_time ++) {
+          let clone_event = new EventFootprint(new ResourceComponentFootprint(
+              eventFootprints[0].componentFootprint.unzonedRange.clone(),false, resource.id)
+              ,eventFootprints[0].eventDef);
+          let foot_prints = clone_event;
+          foot_prints.type = 'Overtime';
+          let over_time_object = overtimes[over_time];
+          let start_duration = moment.duration(over_time_object.start);
+          let end_duration = moment.duration(over_time_object.end);
+          let date = moment(this.dateProfile.activeUnzonedRange.startMs).format('YYYY-MM-DD');
+          let start = moment(date+' '+over_time_object.start).stripZone();
+          let end = moment(date+' '+over_time_object.end).stripZone();
+          foot_prints.componentFootprint.unzonedRange.endMs = (end.valueOf());
+          foot_prints.componentFootprint.unzonedRange.startMs = (start.valueOf());
+          foot_prints.eventDef.endTime = end_duration;
+          foot_prints.eventDef.startTime = start_duration;
+          eventFootprints.push(foot_prints)
+        }
+      }
+    }
     }
 
     return this.businessHourRenderer.renderEventFootprints(eventFootprints)

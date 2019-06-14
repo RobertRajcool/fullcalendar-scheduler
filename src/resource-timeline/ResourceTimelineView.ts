@@ -523,7 +523,13 @@ export default class ResourceTimelineView extends TimelineView {
       const eventInstanceGroup = eventsPayload[eventDefId]
       const eventDef = eventInstanceGroup.getEventDef()
       const resourceIds = eventDef.getResourceIds()
+      if(this.calendar.getView().name === 'timelineDay' || this.calendar.getView().name === 'timelineWeek'){
+        var raw_defination = _.where(eventInstanceGroup.eventInstances[0].def.source.rawEventDefs, { id: Number(eventDefId)});
+        if (raw_defination.length && raw_defination[0]['allDay']) {
+          eventInstanceGroup.eventInstances[0].def['allDayVal'] = raw_defination[0]['allDay']
 
+        }
+      }
       if (resourceIds.length) {
         for (resourceId of resourceIds) {
           let bucket = payloadsByResourceId[resourceId] || (payloadsByResourceId[resourceId] = {})

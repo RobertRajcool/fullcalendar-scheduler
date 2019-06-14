@@ -805,6 +805,11 @@ export default class TimelineView extends View {
         left: (seg.left = coords.left),
         right: -(seg.right = coords.right)
       })
+      if(this.name === "agendaDay" || this.name === "timelineDay"){
+        if(seg.footprint.eventDef.miscProps.isSpecialEvent){
+          this.eventRenderer.handlespecialevent(seg);
+          }
+      }
     }
   }
 

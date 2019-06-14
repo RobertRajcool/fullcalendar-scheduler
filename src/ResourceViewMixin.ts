@@ -277,7 +277,8 @@ export default class ResourceViewMixin extends Mixin implements ResourceViewInte
         this,
         footprint.resourceId ?
           this.calendar.resourceManager.getResourceById(footprint.resourceId) :
-          null
+          null,
+        footprint.isAllDay
       ]
     })
   }
@@ -288,6 +289,13 @@ export default class ResourceViewMixin extends Mixin implements ResourceViewInte
   triggerExternalDrop(singleEventDef, isEvent, el, ev, ui) {
 
     // trigger 'drop' regardless of whether element represents an event
+    let hit = this.queryHit(ev.pageX,ev.pageY);
+    this.calendar.view.isSelected = true;
+    let all_day = false;
+    if(hit.hasOwnProperty('row')){
+      all_day = hit.row ? 'pm' : 'am';
+    }
+
     (this as any).publiclyTrigger('drop', {
       context: el[0],
       args: [
@@ -295,6 +303,7 @@ export default class ResourceViewMixin extends Mixin implements ResourceViewInte
         ev,
         ui,
         singleEventDef.getResourceIds()[0],
+        all_day,
         this
       ]
     })
